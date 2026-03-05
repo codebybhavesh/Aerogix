@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { MapPin, Stethoscope, TrendingDown } from "lucide-react";
+import Particles from "./Particles";
 
 const metrics = [
   { icon: MapPin, value: 50, suffix: "+", label: "Villages Empowered" },

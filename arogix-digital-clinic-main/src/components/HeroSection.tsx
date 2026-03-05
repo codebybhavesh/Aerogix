@@ -1,10 +1,26 @@
 import { ArrowRight, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import heroBg from "@/assets/hero-bg.jpg";
+import Particles from "./Particles";
+import TextType from "./TextType";
 
 const HeroSection = () => {
   return (
     <section id="home" className="relative min-h-[90vh] flex items-center gradient-hero overflow-hidden pt-20">
+      {/* Particles Background */}
+      <Particles
+        particleCount={1000}
+        particleSpread={12}
+        speed={0.04}
+        alphaParticles={true}
+        particleBaseSize={65}
+        sizeRandomness={0.7}
+        cameraDistance={20}
+        moveParticlesOnHover={true}
+        particleHoverFactor={2}
+        className="opacity-70 dark:opacity-50"
+      />
+
       {/* Decorative blobs */}
       <div className="absolute top-20 right-0 w-96 h-96 bg-vitality-light rounded-full blur-3xl opacity-60 -translate-y-1/2 translate-x-1/3" />
       <div className="absolute bottom-0 left-0 w-80 h-80 bg-sky rounded-full blur-3xl opacity-50 translate-y-1/3 -translate-x-1/4" />
@@ -19,8 +35,19 @@ const HeroSection = () => {
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-[1.1] animate-fade-up" style={{ animationDelay: "0.1s" }}>
-              Your Health, No Longer Bound by{" "}
-              <span className="text-gradient">Distance</span>
+              <TextType
+                text="Your Health, No Longer Bound by Distance"
+                as="span"
+                typingSpeed={40}
+                pauseDuration={1500}
+                deletingSpeed={25}
+                loop={false}
+                showCursor={true}
+                cursorCharacter="|"
+                cursorClassName="text-primary"
+                className="text-gradient"
+                initialDelay={300}
+              />
             </h1>
 
             <p className="text-lg sm:text-xl text-muted-foreground max-w-lg leading-relaxed animate-fade-up" style={{ animationDelay: "0.2s" }}>
