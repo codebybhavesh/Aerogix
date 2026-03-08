@@ -8,6 +8,7 @@ import MyAppointments from "@/components/dashboard/patient/MyAppointments";
 import ConsultationModal from "@/components/dashboard/patient/ConsultationModal";
 import PrescriptionSection from "@/components/dashboard/patient/PrescriptionSection";
 import UploadLabReport from "@/components/dashboard/patient/UploadLabReport";
+import CallNotificationBanner from "@/components/dashboard/patient/CallNotificationBanner";
 import { Activity, CalendarCheck, FlaskConical, Stethoscope } from "lucide-react";
 import { Appointment } from "@/lib/types";
 import { useAuth } from "@/context/AuthContext";
@@ -23,6 +24,12 @@ export default function PatientDashboard() {
   const [consultation, setConsultation] = useState<{ appointment: Appointment; type: string } | null>(null);
   const [bookingDoctor, setBookingDoctor] = useState<any>(null);
 
+  // Active incoming call notification state
+  const [incomingCall, setIncomingCall] = useState<{
+    appointmentId: string;
+    doctorName: string;
+  } | null>(null);
+
   useEffect(() => {
     const fetchPatientData = async () => {
       if (user) {
@@ -30,9 +37,7 @@ export default function PatientDashboard() {
           const userDoc = await getDoc(doc(db, "users", user.uid));
           if (userDoc.exists()) {
             const data = userDoc.data();
-            if (data.name) {
-              setPatientName(data.name);
-            }
+            if (data.name) setPatientName(data.name);
           }
         } catch (error) {
           console.error("Error fetching patient data:", error);
@@ -51,12 +56,11 @@ export default function PatientDashboard() {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const apts = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data()
-      })) as unknown as Appointment[]; // Type assertion for Appointment
+      const apts = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data()
+      })) as unknown as Appointment[];
 
-      // Sort by descending created date if possible, otherwise just use order
       apts.sort((a, b) => {
         if (a.createdAt && b.createdAt) {
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -65,11 +69,24 @@ export default function PatientDashboard() {
       });
 
       setAppointments(apts);
+
+      // ── Detect incoming call ──
+      // Find any appointment where the doctor just set callStatus = "started"
+      const activeCall = apts.find(
+        (apt) => (apt as any).callStatus === "started"
+      );
+
+      if (activeCall) {
+        const doctorName = (activeCall as any).callDoctorName || "your doctor";
+        setIncomingCall({ appointmentId: activeCall.id, doctorName });
+      } else {
+        // Clear if call ended/joined
+        setIncomingCall(null);
+      }
     });
 
     return () => unsubscribe();
   }, [user]);
-
 
   const handleBookDoctor = (doctor: any) => {
     setBookingDoctor(doctor);
@@ -77,13 +94,11 @@ export default function PatientDashboard() {
   };
 
   const handleAppointmentBooked = (apt: Appointment) => {
-    // Appointment is now automatically synced via onSnapshot!
     setActiveSection("appointments");
   };
 
   const handleCancelAppointment = (id: string) => {
-    // We should ideally cancel in firestore, but for now we'll just handle it optimistically or wait for backend update.
-    // It's covered automatically if we delete it from DB.
+    // Handle cancellation via Firestore if needed
   };
 
   const handleConsultation = (apt: Appointment, type: string) => {
@@ -116,10 +131,8 @@ export default function PatientDashboard() {
         <PatientTopBar patientName={patientName} />
 
         <main className="flex-1 overflow-y-auto p-8">
-          {/* Dashboard Home */}
           {activeSection === "dashboard" && (
             <div>
-              {/* Stats */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {stats.map((s) => (
                   <div key={s.label} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
@@ -131,8 +144,6 @@ export default function PatientDashboard() {
                   </div>
                 ))}
               </div>
-
-              {/* Doctor List */}
               <DoctorAvailability onBookClick={handleBookDoctor} />
             </div>
           )}
@@ -149,7 +160,7 @@ export default function PatientDashboard() {
             <MyAppointments
               appointments={appointments}
               onConsultation={handleConsultation}
-              onCancel={handleCancelAppointment as any} // Cast temporarily since MyAppointments might still use number IDs
+              onCancel={handleCancelAppointment as any}
             />
           )}
 
@@ -190,7 +201,15 @@ export default function PatientDashboard() {
         </main>
       </div>
 
-      {/* Consultation Modal */}
+      {/* ── Incoming call notification banner ── */}
+      {incomingCall && (
+        <CallNotificationBanner
+          appointmentId={incomingCall.appointmentId}
+          doctorName={incomingCall.doctorName}
+          onDismiss={() => setIncomingCall(null)}
+        />
+      )}
+
       {consultation && (
         <ConsultationModal
           appointment={consultation.appointment}

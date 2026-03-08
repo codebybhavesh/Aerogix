@@ -13,6 +13,9 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import DoctorSetup from "./pages/DoctorSetup";
 import NotFound from "./pages/NotFound";
+import VideoCallPage from "./pages/VideoCallPage";
+import DoctorVideoCallPage from "@/pages/DocterVideoCallPage"
+
 
 const queryClient = new QueryClient();
 
@@ -29,6 +32,8 @@ const AppRoutes = () => {
             <Route path="/landing" element={<Navigate to="/" replace />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/video-call/:roomId" element={<VideoCallPage />} />
+            <Route path="/doctor/video-call/:roomId" element={<DoctorVideoCallPage />} />
 
             <Route
                 path="/doctor"

@@ -1,5 +1,5 @@
 export interface Appointment {
-    id: string; // Firestore document ID is a string
+    id: string;
     doctorId: string;
     patientId: string;
     doctorName?: string;
@@ -15,6 +15,15 @@ export interface Appointment {
     name?: string;
     age?: number;
     village?: string;
+
+    // Video call fields
+    callStatus?: "started" | "joined" | "ended";
+    callDoctorName?: string;
+    roomId?: string;
+    callStartedAt?: string;
+
+    // Prescription flag — set to true by doctor after saving prescription
+    hasPrescription?: boolean;
 }
 
 export interface Doctor {
@@ -30,4 +39,26 @@ export interface Doctor {
     color?: string;
     consultationFee?: string | number;
     availabilityText?: string;
+}
+
+export interface MedicineEntry {
+    id: string;
+    name: string;
+    dosage: string;
+    frequency: string;       // e.g. "1-0-1", "1-1-1", "SOS"
+    duration: string;        // e.g. "5 days", "1 month"
+    instructions: string;    // e.g. "After meals", "Before sleep"
+}
+
+export interface Prescription {
+    id: string;              // Firestore document ID
+    appointmentId: string;
+    patientId: string;
+    patientName: string;
+    doctorName: string;
+    date: string;            // formatted date string e.g. "08/03/2026"
+    problem: string;
+    medicines: MedicineEntry[];
+    notes: string;
+    createdAt?: any;         // Firestore Timestamp — use .toDate() to convert
 }
