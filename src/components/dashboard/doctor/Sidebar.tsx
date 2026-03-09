@@ -7,8 +7,8 @@ import {
   CalendarDays,
   ClipboardList,
   FlaskConical,
+  Wallet,
   Users,
-  MessageSquare,
   Settings,
   LogOut,
   Stethoscope,
@@ -19,17 +19,18 @@ const navItems = [
   { id: "appointments", label: "Appointments", icon: CalendarDays },
   { id: "requests", label: "Requests", icon: ClipboardList },
   { id: "lab", label: "Lab Reports", icon: FlaskConical },
+  { id: "wallet", label: "Wallet", icon: Wallet },
   { id: "patients", label: "Patients", icon: Users },
-  { id: "messages", label: "Messages", icon: MessageSquare },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
 interface SidebarProps {
   activeSection: string;
   setActiveSection: (id: string) => void;
+  pendingRequests?: number;
 }
 
-const Sidebar = ({ activeSection, setActiveSection }: SidebarProps) => {
+const Sidebar = ({ activeSection, setActiveSection, pendingRequests = 0 }: SidebarProps) => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -72,8 +73,10 @@ const Sidebar = ({ activeSection, setActiveSection }: SidebarProps) => {
             >
               <Icon size={18} className={isActive ? "text-white" : "text-slate-500"} />
               {label}
-              {id === "requests" && (
-                <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">3</span>
+              {id === "requests" && pendingRequests > 0 && (
+                <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                  {pendingRequests}
+                </span>
               )}
             </button>
           );

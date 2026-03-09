@@ -34,6 +34,7 @@ const Register = () => {
                 name,
                 email,
                 role,
+                walletBalance: role === "patient" ? 1000 : 0,
                 createdAt: new Date().toISOString(),
             });
 

@@ -9,6 +9,7 @@ import {
   FlaskConical,
   FileText,
   UserCircle,
+  Wallet,
   LogOut,
   Heart,
 } from "lucide-react";
@@ -17,6 +18,7 @@ const navItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "book", label: "Book Appointment", icon: CalendarPlus },
   { id: "appointments", label: "My Appointments", icon: CalendarCheck },
+  { id: "wallet", label: "Wallet", icon: Wallet },
   { id: "labs", label: "Lab Reports", icon: FlaskConical },
   { id: "prescriptions", label: "Prescriptions", icon: FileText },
   { id: "profile", label: "Profile", icon: UserCircle },

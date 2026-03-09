@@ -77,12 +77,14 @@ export default function BookAppointment({ preSelectedDoctor, onAppointmentBooked
     setSubmitError(null);
 
     try {
-      const appointmentData = {
+      const appointmentData: Omit<Appointment, "id"> = {
         doctorId: selectedDoctor.id,
         patientId: user.uid,
         patientName: patientName,
         doctorName: selectedDoctor.name,
         specialization: selectedDoctor.specialization,
+        consultationFee: Number(selectedDoctor.consultationFee || 0),
+        paymentStatus: "unpaid",
         date: selectedDate,
         time: selectedSlot,
         problem,

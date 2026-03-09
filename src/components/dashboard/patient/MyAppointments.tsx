@@ -4,8 +4,12 @@ import { Appointment } from "@/lib/types";
 
 const statusConfig: Record<string, string> = {
   Pending: "bg-amber-50 text-amber-600 border-amber-200",
+  Accepted: "bg-emerald-50 text-emerald-600 border-emerald-200",
   Confirmed: "bg-emerald-50 text-emerald-600 border-emerald-200",
+  "in-progress": "bg-blue-50 text-blue-600 border-blue-200",
   Completed: "bg-blue-50 text-blue-600 border-blue-200",
+  Cancelled: "bg-red-50 text-red-600 border-red-200",
+  Rejected: "bg-slate-50 text-slate-500 border-slate-200",
 };
 
 interface MyAppointmentsProps {
@@ -58,7 +62,13 @@ export default function MyAppointments({ appointments, onConsultation, onCancel 
                     <span className="flex items-center gap-1">
                       <Clock size={11} /> {apt.time}
                     </span>
+                    <span className="flex items-center gap-1 font-medium text-slate-600">
+                      Fee: Rs {Number(apt.consultationFee || 0)}
+                    </span>
                   </div>
+                  <p className={`mt-1 text-[11px] font-medium ${(apt.paymentStatus || "unpaid") === "paid" ? "text-emerald-600" : "text-amber-600"}`}>
+                    Payment: {(apt.paymentStatus || "unpaid") === "paid" ? "Paid" : "Pending"}
+                  </p>
                   {apt.problem && (
                     <p className="mt-2 text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-1.5 max-w-xs truncate">
                       {apt.problem}
@@ -67,7 +77,7 @@ export default function MyAppointments({ appointments, onConsultation, onCancel 
                 </div>
               </div>
 
-              <span className={`text-xs font-semibold px-3 py-1 rounded-full border flex-shrink-0 ${statusConfig[apt.status]}`}>
+              <span className={`text-xs font-semibold px-3 py-1 rounded-full border flex-shrink-0 ${statusConfig[apt.status] || "bg-slate-50 text-slate-500 border-slate-200"}`}>
                 {apt.status}
               </span>
             </div>
@@ -82,11 +92,16 @@ export default function MyAppointments({ appointments, onConsultation, onCancel 
               </button>
               <button
                 onClick={() => onConsultation(apt, "video")}
-                className="flex items-center gap-1.5 text-xs font-medium bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-2 rounded-lg transition-colors"
+                disabled={(apt.paymentStatus || "unpaid") !== "paid"}
+                className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg transition-colors ${
+                  (apt.paymentStatus || "unpaid") === "paid"
+                    ? "bg-blue-50 hover:bg-blue-100 text-blue-600"
+                    : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                }`}
               >
                 <Video size={13} /> Video Consultation
               </button>
-              {apt.status !== "Completed" && (
+              {!["Completed", "Cancelled", "Rejected"].includes(apt.status) && (
                 <button
                   onClick={() => onCancel(apt.id)}
                   className="ml-auto flex items-center gap-1.5 text-xs font-medium text-red-400 hover:text-red-600 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors"

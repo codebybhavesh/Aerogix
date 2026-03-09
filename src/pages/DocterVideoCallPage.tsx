@@ -7,6 +7,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/firebase";
 import { useAuth } from "@/context/AuthContext";
+import { getReportOpenUrl } from "@/lib/reportUrl";
 import {
   PhoneOff, FileText, Pill, Plus, Trash2,
   Download, ChevronRight, FlaskConical, CheckCircle,
@@ -28,9 +29,12 @@ interface MedicineEntry {
 
 interface LabReport {
   id: string;
-  fileName: string;
-  fileUrl: string;
-  uploadedAt: string;
+  fileName?: string;
+  fileUrl?: string;
+  reportName?: string;
+  reportUrl?: string;
+  uploadedAt?: string;
+  uploadDate?: any;
   type?: string;
 }
 
@@ -361,19 +365,23 @@ const DoctorVideoCallPage = () => {
                     <p style={{ color: "#94a3b8", fontSize: 13, fontWeight: 600, margin: 0 }}>No lab reports uploaded</p>
                     <p style={{ color: "#475569", fontSize: 11, marginTop: 4 }}>Patient hasn't shared any reports yet</p>
                   </div>
-                ) : labReports.map(r => (
-                  <a key={r.id} href={r.fileUrl} target="_blank" rel="noopener noreferrer"
+                ) : labReports.map(r => {
+                  const reportUrl = getReportOpenUrl(r);
+                  return (
+                  <a key={r.id} href={reportUrl || "#"} target="_blank" rel="noopener noreferrer"
+                    onClick={(e) => { if (!reportUrl) e.preventDefault(); }}
                     style={{ display: "flex", alignItems: "center", gap: 10, padding: 11, borderRadius: 11, background: "#0b1120", border: "1px solid #1e3a5f", textDecoration: "none" }}>
                     <div style={{ width: 38, height: 38, borderRadius: 9, background: "#1e3a5f", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <FileText size={17} color="#38bdf8" />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ color: "#e2e8f0", fontWeight: 600, fontSize: 12, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.fileName}</p>
-                      <p style={{ color: "#64748b", fontSize: 10, marginTop: 2 }}>{r.type || "Lab Report"} · {r.uploadedAt ? new Date(r.uploadedAt).toLocaleDateString("en-IN") : "—"}</p>
+                      <p style={{ color: "#e2e8f0", fontWeight: 600, fontSize: 12, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.reportName || r.fileName || "Lab Report"}</p>
+                      <p style={{ color: "#64748b", fontSize: 10, marginTop: 2 }}>{r.type || "Lab Report"} · {r.uploadedAt ? new Date(r.uploadedAt).toLocaleDateString("en-IN") : (r.uploadDate?.toDate ? r.uploadDate.toDate().toLocaleDateString("en-IN") : "—")}</p>
                     </div>
                     <ChevronRight size={14} color="#475569" style={{ flexShrink: 0 }} />
                   </a>
-                ))}
+                  );
+                })}
               </div>
             )}
 

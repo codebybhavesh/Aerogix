@@ -21,6 +21,10 @@ export interface Appointment {
     callDoctorName?: string;
     roomId?: string;
     callStartedAt?: string;
+    consultationFee?: number;
+    paymentStatus?: "unpaid" | "paid";
+    paymentTransactionId?: string;
+    paidAt?: any;
 
     // Prescription flag — set to true by doctor after saving prescription
     hasPrescription?: boolean;
@@ -39,6 +43,25 @@ export interface Doctor {
     color?: string;
     consultationFee?: string | number;
     availabilityText?: string;
+}
+
+export interface AppUserProfile {
+    id: string;
+    name: string;
+    email?: string;
+    role: "doctor" | "patient";
+    walletBalance?: number;
+    createdAt?: string;
+}
+
+export interface LabReport {
+    id: string; // Firestore document ID
+    patientId: string;
+    patientName: string;
+    doctorId: string;
+    reportName: string;
+    reportUrl: string;
+    uploadDate?: any; // Firestore Timestamp (serverTimestamp)
 }
 
 export interface MedicineEntry {
@@ -61,4 +84,16 @@ export interface Prescription {
     medicines: MedicineEntry[];
     notes: string;
     createdAt?: any;         // Firestore Timestamp — use .toDate() to convert
+}
+
+export interface WalletTransaction {
+    id: string;
+    senderId: string;
+    receiverId: string;
+    senderRole: "patient" | "doctor";
+    receiverRole: "patient" | "doctor" | "system";
+    amount: number;
+    type: "consultation" | "payment" | "withdrawal";
+    status: "completed";
+    createdAt?: any; // Firestore Timestamp
 }

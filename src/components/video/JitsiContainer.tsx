@@ -23,7 +23,7 @@ const JitsiContainer: React.FC<JitsiProps> = ({ roomName, displayName, onLeave }
         interfaceConfigOverwrite={{
           DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
         }}
-        userInfo={{ displayName }}
+        userInfo={{ displayName, email: "" }}
         onReadyToClose={onLeave}
         getIFrameRef={(iframeRef) => { iframeRef.style.height = '100%'; }}
       />

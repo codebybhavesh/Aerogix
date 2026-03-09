@@ -9,20 +9,27 @@ import ConsultationModal from "@/components/dashboard/patient/ConsultationModal"
 import PrescriptionSection from "@/components/dashboard/patient/PrescriptionSection";
 import UploadLabReport from "@/components/dashboard/patient/UploadLabReport";
 import CallNotificationBanner from "@/components/dashboard/patient/CallNotificationBanner";
+import WalletPage from "@/components/dashboard/patient/WalletPage";
 import { Activity, CalendarCheck, FlaskConical, Stethoscope } from "lucide-react";
-import { Appointment } from "@/lib/types";
+import { Appointment, LabReport, WalletTransaction } from "@/lib/types";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/firebase";
-import { doc, getDoc, collection, query, where, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, onSnapshot, updateDoc } from "firebase/firestore";
+import { addDemoMoney, patientTransactionsQuery, transferWalletPayment } from "@/lib/wallet";
 
 export default function PatientDashboard() {
   const { user } = useAuth();
   const [patientName, setPatientName] = useState<string>("Patient");
   const [activeSection, setActiveSection] = useState("dashboard");
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [labReports, setLabReports] = useState<any[]>([]);
+  const [labReports, setLabReports] = useState<LabReport[]>([]);
   const [consultation, setConsultation] = useState<{ appointment: Appointment; type: string } | null>(null);
   const [bookingDoctor, setBookingDoctor] = useState<any>(null);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [patientTransactions, setPatientTransactions] = useState<WalletTransaction[]>([]);
+  const [payingAppointmentId, setPayingAppointmentId] = useState<string | null>(null);
+  const [isAddingMoney, setIsAddingMoney] = useState(false);
+  const [addAmountInput, setAddAmountInput] = useState<string>("");
 
   // Active incoming call notification state
   const [incomingCall, setIncomingCall] = useState<{
@@ -88,6 +95,52 @@ export default function PatientDashboard() {
     return () => unsubscribe();
   }, [user]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubUser = onSnapshot(doc(db, "users", user.uid), (snap) => {
+      if (!snap.exists()) return;
+      const balance = Number((snap.data() as any).walletBalance || 0);
+      setWalletBalance(balance);
+    });
+
+    const txQuery = patientTransactionsQuery(user.uid);
+    const unsubTransactions = onSnapshot(txQuery, (snapshot) => {
+      const items = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as WalletTransaction[];
+      items.sort((a: any, b: any) => {
+        const aMs = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+        const bMs = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+        return bMs - aMs;
+      });
+      setPatientTransactions(items);
+    });
+
+    return () => {
+      unsubUser();
+      unsubTransactions();
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const q = query(collection(db, "labReports"), where("patientId", "==", user.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const reports = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as LabReport[];
+
+      // Prefer sorting by uploadDate if present (Timestamp), otherwise keep insertion order.
+      reports.sort((a: any, b: any) => {
+        const aMs = a.uploadDate?.toMillis ? a.uploadDate.toMillis() : 0;
+        const bMs = b.uploadDate?.toMillis ? b.uploadDate.toMillis() : 0;
+        return bMs - aMs;
+      });
+
+      setLabReports(reports);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
   const handleBookDoctor = (doctor: any) => {
     setBookingDoctor(doctor);
     setActiveSection("book");
@@ -97,16 +150,76 @@ export default function PatientDashboard() {
     setActiveSection("appointments");
   };
 
-  const handleCancelAppointment = (id: string) => {
-    // Handle cancellation via Firestore if needed
+  const handleCancelAppointment = async (id: string | number) => {
+    if (!id) return;
+    const confirmed = window.confirm("Cancel this appointment?");
+    if (!confirmed) return;
+
+    try {
+      await updateDoc(doc(db, "appointments", String(id)), {
+        status: "Cancelled",
+        callStatus: "ended",
+      });
+    } catch (error) {
+      console.error("Failed to cancel appointment:", error);
+      window.alert("Failed to cancel appointment. Please try again.");
+    }
+  };
+
+  const handleAddMoney = async () => {
+    if (!user) return;
+    const amount = Number(addAmountInput);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      window.alert("Enter a valid amount");
+      return;
+    }
+
+    setIsAddingMoney(true);
+    try {
+      await addDemoMoney(user.uid, amount);
+      setAddAmountInput("");
+    } catch (error: any) {
+      console.error("Failed to add demo money:", error);
+      window.alert(error?.message || "Failed to add money");
+    } finally {
+      setIsAddingMoney(false);
+    }
+  };
+
+  const handlePayAppointment = async (appointment: Appointment) => {
+    if (!user) return;
+    const amount = Number(appointment.consultationFee || 0);
+    if (amount <= 0) {
+      window.alert("Consultation fee is invalid for this appointment.");
+      return;
+    }
+
+    setPayingAppointmentId(String(appointment.id));
+    try {
+      await transferWalletPayment({
+        senderId: user.uid,
+        receiverId: String(appointment.doctorId),
+        senderRole: "patient",
+        receiverRole: "doctor",
+        amount,
+        type: "consultation",
+        appointmentId: String(appointment.id),
+      });
+      window.alert("Payment completed");
+    } catch (error: any) {
+      console.error("Wallet transfer failed:", error);
+      window.alert(error?.message || "Payment failed");
+    } finally {
+      setPayingAppointmentId(null);
+    }
   };
 
   const handleConsultation = (apt: Appointment, type: string) => {
+    if (type === "video" && (apt.paymentStatus || "unpaid") !== "paid") {
+      window.alert("Please pay consultation fee from Wallet before starting video consultation.");
+      return;
+    }
     setConsultation({ appointment: apt, type });
-  };
-
-  const handleUploadReport = (report: any) => {
-    setLabReports((prev) => [report, ...prev]);
   };
 
   const stats = [
@@ -148,6 +261,20 @@ export default function PatientDashboard() {
             </div>
           )}
 
+          {activeSection === "wallet" && (
+            <WalletPage
+              walletBalance={walletBalance}
+              addAmount={addAmountInput}
+              onAddAmountChange={setAddAmountInput}
+              adding={isAddingMoney}
+              onAddMoney={handleAddMoney}
+              appointments={appointments}
+              payingAppointmentId={payingAppointmentId}
+              onPayAppointment={handlePayAppointment}
+              transactions={patientTransactions}
+            />
+          )}
+
           {activeSection === "book" && (
             <BookAppointment
               preSelectedDoctor={bookingDoctor}
@@ -160,14 +287,15 @@ export default function PatientDashboard() {
             <MyAppointments
               appointments={appointments}
               onConsultation={handleConsultation}
-              onCancel={handleCancelAppointment as any}
+              onCancel={handleCancelAppointment}
             />
           )}
 
           {activeSection === "labs" && (
             <UploadLabReport
               labReports={labReports}
-              onUpload={handleUploadReport}
+              patientName={patientName}
+              defaultDoctorId={appointments[0]?.doctorId}
             />
           )}
 
@@ -206,6 +334,9 @@ export default function PatientDashboard() {
         <CallNotificationBanner
           appointmentId={incomingCall.appointmentId}
           doctorName={incomingCall.doctorName}
+          canJoin={
+            (appointments.find((a) => a.id === incomingCall.appointmentId)?.paymentStatus || "unpaid") === "paid"
+          }
           onDismiss={() => setIncomingCall(null)}
         />
       )}

@@ -1,20 +1,6 @@
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getFirestore } from "firebase/firestore";
+// Back-compat re-exports.
+// Many parts of the app import `db` from "@/firebase".
+// The canonical Firebase initialization lives in `src/lib/firebase.ts`.
+import app, { analytics, db, auth } from "./lib/firebase";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyBoY3LEVjXTXlRJaJnTXMwgYBv7g6pUx0w",
-    authDomain: "aerogix-e4613.firebaseapp.com",
-    projectId: "aerogix-e4613",
-    storageBucket: "aerogix-e4613.firebasestorage.app",
-    messagingSenderId: "74882456106",
-    appId: "1:74882456106:web:cf628c403e996c878a0153",
-    measurementId: "G-RPPR97GEP2"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const db = getFirestore(app);
-
-export { app, analytics, db };
+export { app, analytics, db, auth };

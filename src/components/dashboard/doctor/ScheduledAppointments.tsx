@@ -24,6 +24,22 @@ const ScheduledAppointments = ({
 }: ScheduledAppointmentsProps) => {
   const navigate = useNavigate();
 
+  const handleStartCall = (appt: Appointment) => {
+    // Existing app uses appointmentId as roomId.
+    try {
+      socket.emit("start_call", {
+        roomId: appt.id,
+        doctorName,
+        doctorId,
+        patientId: appt.patientId,
+      });
+    } catch (e) {
+      // non-fatal for navigation
+      console.warn("Failed to emit start_call", e);
+    }
+    navigate(`/doctor/video-call/${appt.id}`);
+  };
+
   
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
