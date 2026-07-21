@@ -1,4 +1,4 @@
-# Rural Healthcare Platform 🏥
+# Arogix 🏥
 
 A full-stack healthcare platform designed to improve healthcare accessibility in rural areas by connecting **Patients, Doctors, and Pharmacists** on a single platform.
 
